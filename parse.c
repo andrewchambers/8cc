@@ -2114,9 +2114,18 @@ static void read_static_local_var(Type *ty, char *name) {
     vec_push(toplevels, ast_decl(var, init));
 }
 
+static Type *read_decl_spec_or_default_int(int *psclass) {
+    Type *basetype = type_int;
+    if (is_type_keyword(peek_token()))
+        basetype = read_decl_spec(psclass);
+    else
+        warn("type specifier missing, assuming int");
+    return basetype;
+}
+
 static void read_decl(Vector *block, bool isglobal) {
-    int sclass;
-    Type *basetype = read_decl_spec(&sclass);
+    int sclass = 0;
+    Type *basetype = read_decl_spec_or_default_int(&sclass);
     if (next_token(';'))
         return;
     for (;;) {
@@ -2262,11 +2271,7 @@ static void backfill_labels(void) {
 
 static Node *read_funcdef(void) {
     int sclass = 0;
-    Type *basetype = type_int;
-    if (is_type_keyword(peek_token()))
-        basetype = read_decl_spec(&sclass);
-    else
-        warn("type specifier missing, assuming int");
+    Type *basetype = read_decl_spec_or_default_int(&sclass);
     localenv = make_map_parent(globalenv);
     gotos = make_vector();
     labels = make_map();
